@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Lapd
+Bundle-SymbolicName: polymtl.pmd.lapd
+Bundle-Version: 1.0.0.qualifier
+Fragment-Host: net.sourceforge.pmd.eclipse.plugin
+Automatic-Module-Name: polymtl.pmd.lapd
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

@@ -6,7 +6,7 @@ Bundle-Version: 1.0.0.0
 Bundle-ClassPath: lib/ejml-0.23.jar,lib/joda-time.jar,lib/jollyday.jar
  ,lib/protobuf.jar,lib/slf4j-api.jar,lib/slf4j-simple.jar,lib/stanford
  -corenlp-3.8.0-models.jar,lib/stanford-corenlp-3.8.0.jar,lib/xom.jar,
- bin/,lib/jwnl.jar
+ bin/,lib/jwnl.jar, src/, lib/, .
 Fragment-Host: net.sourceforge.pmd.eclipse.plugin
 Automatic-Module-Name: polymtl.pmd.lapd
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

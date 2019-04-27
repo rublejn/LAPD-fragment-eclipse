@@ -23,289 +23,290 @@ import utils.Splitter;
 
 public class AttributesLAPDRule extends AbstractLAPDRule {
 
-	private boolean collectionTypeSingleNameAttribute;
-	private boolean booleanAttributeNameNotType;
-	private boolean singleTypeCollectionNameAttribute;
-	private boolean oppositeAttributeNameAndType;
-
-	private static final PropertyDescriptor<Boolean> COLLECTION_TYPE_SINGLE_NAME_ATTRIBUTE
-		= PropertyFactory.booleanProperty("collectionTypeSingleNameAttribute")
-			.desc("Checks attributes with collection type and single object name").defaultValue(true)
-			.build();
-
-	private static final PropertyDescriptor<Boolean> BOOLEAN_ATTRIBUTE_NAME_NOT_TYPE
-		= PropertyFactory.booleanProperty("booleanAttributeNameNotType")
-			.desc("Checks attributes whose name suggests boolean but type isn't").defaultValue(true)
-			.build();
-
-	private static final PropertyDescriptor<Boolean> SINGLE_TYPE_COLLECTION_NAME_ATTRIBUTE
-		= PropertyFactory.booleanProperty("singleTypeCollectionNameAttribute")
-			.desc("Checks attributes with single instance type and collection object name")
-			.defaultValue(true).build();
-
-	private static final PropertyDescriptor<Boolean> OPPOSITE_ATTRIBUTE_NAME_AND_TYPE
-		= PropertyFactory.booleanProperty("oppositeAttributeNameAndAttributeType")
-			.desc("Checks antonym relations between terms in attribute type and attribute name")
-			.defaultValue(true).build();
-
-	public AttributesLAPDRule() {
-		definePropertyDescriptor(COLLECTION_TYPE_SINGLE_NAME_ATTRIBUTE);
-		definePropertyDescriptor(BOOLEAN_ATTRIBUTE_NAME_NOT_TYPE);
-		definePropertyDescriptor(SINGLE_TYPE_COLLECTION_NAME_ATTRIBUTE);
-		definePropertyDescriptor(OPPOSITE_ATTRIBUTE_NAME_AND_TYPE);
-
-	}
-
-	@Override
-	public void start(RuleContext ctx) {
-		collectionTypeSingleNameAttribute = getProperty(COLLECTION_TYPE_SINGLE_NAME_ATTRIBUTE);
-		booleanAttributeNameNotType = getProperty(BOOLEAN_ATTRIBUTE_NAME_NOT_TYPE);
-		singleTypeCollectionNameAttribute = getProperty(SINGLE_TYPE_COLLECTION_NAME_ATTRIBUTE);
-		oppositeAttributeNameAndType = getProperty(OPPOSITE_ATTRIBUTE_NAME_AND_TYPE);
-	}
-
-	private static Vector<Comment> getVariableComments(final ASTVariableDeclarator variable,
-			List<Comment> comments) {
-		return getNodeComments(variable, comments);
-	}
-
-	private static String getVariableType(final ASTVariableDeclarator variable) {
-
-		return getNodeType(variable);
-	}
-
-	public Object visit(ASTVariableDeclarator variable, Object data) {
-
-		String variableName;
-		String variableType;
-		final String className = variable.getFirstParentOfType(ASTClassOrInterfaceDeclaration.class)
-				.getImage();
-		final List<Comment> comments = variable.getFirstParentOfType(ASTCompilationUnit.class)
-				.getComments();
-		List<String> result = new ArrayList<String>();
+  private boolean collectionTypeSingleNameAttribute;
+  private boolean booleanAttributeNameNotType;
+  private boolean singleTypeCollectionNameAttribute;
+  private boolean oppositeAttributeNameAndType;
+
+  private static final PropertyDescriptor<Boolean> COLLECTION_TYPE_SINGLE_NAME_ATTRIBUTE = PropertyFactory
+      .booleanProperty("collectionTypeSingleNameAttribute")
+      .desc("Checks attributes with collection type and single object name").defaultValue(true)
+      .build();
+
+  private static final PropertyDescriptor<Boolean> BOOLEAN_ATTRIBUTE_NAME_NOT_TYPE = PropertyFactory
+      .booleanProperty("booleanAttributeNameNotType")
+      .desc("Checks attributes whose name suggests boolean but type isn't").defaultValue(true)
+      .build();
+
+  private static final PropertyDescriptor<Boolean> SINGLE_TYPE_COLLECTION_NAME_ATTRIBUTE = PropertyFactory
+      .booleanProperty("singleTypeCollectionNameAttribute")
+      .desc("Checks attributes with single instance type and collection object name")
+      .defaultValue(true).build();
+
+  private static final PropertyDescriptor<Boolean> OPPOSITE_ATTRIBUTE_NAME_AND_TYPE = PropertyFactory
+      .booleanProperty("oppositeAttributeNameAndAttributeType")
+      .desc("Checks antonym relations between terms in attribute type and attribute name")
+      .defaultValue(true).build();
+
+  public AttributesLAPDRule() {
+    definePropertyDescriptor(COLLECTION_TYPE_SINGLE_NAME_ATTRIBUTE);
+    definePropertyDescriptor(BOOLEAN_ATTRIBUTE_NAME_NOT_TYPE);
+    definePropertyDescriptor(SINGLE_TYPE_COLLECTION_NAME_ATTRIBUTE);
+    definePropertyDescriptor(OPPOSITE_ATTRIBUTE_NAME_AND_TYPE);
+
+  }
+
+  @Override
+  public void start(RuleContext ctx) {
+    collectionTypeSingleNameAttribute = getProperty(COLLECTION_TYPE_SINGLE_NAME_ATTRIBUTE);
+    booleanAttributeNameNotType = getProperty(BOOLEAN_ATTRIBUTE_NAME_NOT_TYPE);
+    singleTypeCollectionNameAttribute = getProperty(SINGLE_TYPE_COLLECTION_NAME_ATTRIBUTE);
+    oppositeAttributeNameAndType = getProperty(OPPOSITE_ATTRIBUTE_NAME_AND_TYPE);
+  }
+
+  private static Vector<Comment> getVariableComments(final ASTVariableDeclarator variable,
+      List<Comment> comments) {
+    return getNodeComments(variable, comments);
+  }
+
+  private static String getVariableType(final ASTVariableDeclarator variable) {
+
+    return getNodeType(variable);
+  }
+
+  @Override
+  public Object visit(ASTVariableDeclarator variable, Object data) {
+
+    String variableName;
+    String variableType;
+    final String className = variable.getFirstParentOfType(ASTClassOrInterfaceDeclaration.class)
+        .getImage();
+    final List<Comment> comments = variable.getFirstParentOfType(ASTCompilationUnit.class)
+        .getComments();
+    List<String> result = new ArrayList<String>();
+
+    init();
+
+    variableType = getVariableType(variable);
+    variableName = variable.getFirstChildOfType(ASTVariableDeclaratorId.class).getImage();
+
+    try {
+
+      // D1
+      if (detectCollectionTypeSingleNameAttribute(variableName, variableType)) {
+
+        addViolationWithMessage(data, variable,
+            "LAPD - D1: Attribute type suggests multiple objects but the name suggests single objects. "
+                + SIGNATURE,
+            new Object[] { className, variableName, variableType });
+      }
+
+      // D2
+      if (detectBooleanAttributeNameNotType(variableName, variableType)) {
+
+        addViolationWithMessage(data, variable,
+            "LAPD - D2: Attribute name is predicate but type is not Boolean. " + SIGNATURE,
+            new Object[] { className, variableName, variableType });
+      }
+
+      // E1
+      if (detectSingleTypeCollectionNameAttribute(variableName, variableType)) {
 
-		init();
-
-		variableType = getVariableType(variable);
-		variableName = variable.getFirstChildOfType(ASTVariableDeclaratorId.class).getImage();
-
-		try {
-
-			// D1
-			if (detectCollectionTypeSingleNameAttribute(variableName, variableType)) {
-
-				addViolationWithMessage(data, variable,
-						"LAPD - D1: Attribute type suggests multiple objects but the name suggests single objects. "
-								+ SIGNATURE,
-						new Object[] { className, variableName, variableType });
-			}
-
-			// D2
-			if (detectBooleanAttributeNameNotType(variableName, variableType)) {
-
-				addViolationWithMessage(data, variable,
-						"LAPD - D2: Attribute name is predicate but type is not Boolean. " + SIGNATURE,
-						new Object[] { className, variableName, variableType });
-			}
-
-			// E1
-			if (detectSingleTypeCollectionNameAttribute(variableName, variableType)) {
+        addViolationWithMessage(data, variable,
+            "LAPD - E1: Attribute type suggests single object but the name suggests multiple objects. "
+                + SIGNATURE,
+            new Object[] { className, variableName, variableType });
+      }
+
+      // F1
+      result = detectOppositeAttributeNameAndAttributeType(variableName, variableType);
+      if (result != null) {
+
+        addViolationWithMessage(data, variable,
+            "LAPD - F1: Antonym relation between '{3}' in attribute name and '{4}' in attribute type. "
+                + SIGNATURE,
+            new Object[] { className, variableName, variableType, result.get(0), result.get(1) });
+      }
 
-				addViolationWithMessage(data, variable,
-						"LAPD - E1: Attribute type suggests single object but the name suggests multiple objects. "
-								+ SIGNATURE,
-						new Object[] { className, variableName, variableType });
-			}
-
-			// F1
-			result = detectOppositeAttributeNameAndAttributeType(variableName, variableType);
-			if (result != null) {
-
-				addViolationWithMessage(data, variable,
-						"LAPD - F1: Antonym relation between '{3}' in attribute name and '{4}' in attribute type. "
-								+ SIGNATURE,
-						new Object[] { className, variableName, variableType, result.get(0), result.get(1) });
-			}
+      // F2
+      result = detectOppositeCommentAndAttributeSignature(variable, variableName, variableType,
+          comments);
+      if (result != null) {
+
+        addViolationWithMessage(data, variable,
+            "LAPD - F2: Antonym relation between variable signature and comment term: "
+                + "''{3}'' in comments is an antonym of ''{4}''. " + SIGNATURE,
+            new Object[] { className, variableName, variableType, result.get(0), result.get(1) });
+      }
+
+    } catch (JWNLException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
 
-			// F2
-			result = detectOppositeCommentAndAttributeSignature(variable, variableName, variableType,
-					comments);
-			if (result != null) {
+    return data;
+
+  }
 
-				addViolationWithMessage(data, variable,
-						"LAPD - F2: Antonym relation between variable signature and comment term: "
-								+ "''{3}'' in comments is an antonym of ''{4}''." + SIGNATURE,
-						new Object[] { className, variableName, variableType, result.get(0), result.get(1) });
-			}
-
-		} catch (JWNLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+  // D1
+  private boolean detectCollectionTypeSingleNameAttribute(final String variableName,
+      final String variableType) {
 
-		return data;
-
-	}
+    if (isCollection(variableType) && !isCollection(variableName)) {
 
-	// D1
-	private boolean detectCollectionTypeSingleNameAttribute(final String variableName,
-			final String variableType) {
+      final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
 
-		if (isCollection(variableType) && !isCollection(variableName)) {
+      if (splittedVariableName.size() > 0) {
 
-			final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
+        final String lastPOS = CustomParser.getPOS(splittedVariableName.lastElement(),
+            splittedVariableName);
 
-			if (splittedVariableName.size() > 0) {
+        if (lastPOS != null && lastPOS.equalsIgnoreCase("NN")
+            && !splittedVariableName.lastElement().endsWith("s")
+            && !CustomParser.hasPOS("NNS", splittedVariableName)) {
 
-				final String lastPOS = CustomParser.getPOS(splittedVariableName.lastElement(),
-						splittedVariableName);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
-				if (lastPOS != null && lastPOS.equalsIgnoreCase("NN")
-						&& !splittedVariableName.lastElement().endsWith("s")
-						&& !CustomParser.hasPOS("NNS", splittedVariableName)) {
+  // D2
+  private boolean detectBooleanAttributeNameNotType(final String variableName,
+      final String variableType) throws JWNLException {
 
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+    if (!variableType.equalsIgnoreCase("boolean")) {
 
-	// D2
-	private boolean detectBooleanAttributeNameNotType(final String variableName,
-			final String variableType) throws JWNLException {
+      final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
 
-		if (!variableType.equalsIgnoreCase("boolean")) {
+      if (splittedVariableName.size() > 0) {
 
-			final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
+        final String firstPOS = CustomParser.getPOS(splittedVariableName.firstElement(),
+            splittedVariableName);
+        final String lastPOS = CustomParser.getPOS(splittedVariableName.lastElement(),
+            splittedVariableName);
 
-			if (splittedVariableName.size() > 0) {
+        if ("VBG".equalsIgnoreCase(lastPOS)
+            && !CustomDictionary.hasIndexWordForPos(splittedVariableName.lastElement(), POS.NOUN)
+            || firstPOS != null && "VBZ".equalsIgnoreCase(firstPOS) && !CustomDictionary
+                .hasIndexWordForPos(splittedVariableName.firstElement(), POS.NOUN)) {
 
-				final String firstPOS = CustomParser.getPOS(splittedVariableName.firstElement(),
-						splittedVariableName);
-				final String lastPOS = CustomParser.getPOS(splittedVariableName.lastElement(),
-						splittedVariableName);
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
 
-				if ("VBG".equalsIgnoreCase(lastPOS)
-						&& !CustomDictionary.hasIndexWordForPos(splittedVariableName.lastElement(), POS.NOUN)
-						|| firstPOS != null && "VBZ".equalsIgnoreCase(firstPOS) && !CustomDictionary
-								.hasIndexWordForPos(splittedVariableName.firstElement(), POS.NOUN)) {
+  // E1
+  private boolean detectSingleTypeCollectionNameAttribute(final String variableName,
+      final String variableType) {
 
-					return true;
-				}
-			}
-			return false;
-		}
-		return false;
-	}
+    if (!isCollection(variableType) && !isCollection(variableName)) {
 
-	// E1
-	private boolean detectSingleTypeCollectionNameAttribute(final String variableName,
-			final String variableType) {
+      final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
+      final Vector<String> splittedVariableType = Splitter.variableSplitter(variableType);
 
-		if (!isCollection(variableType) && !isCollection(variableName)) {
+      if (splittedVariableName.size() > 0 && splittedVariableType.size() > 0) {
 
-			final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
-			final Vector<String> splittedVariableType = Splitter.variableSplitter(variableType);
+        for (final String termInType : splittedVariableType) {
+          if (containsCollectionKeyword(termInType, true)) {
+            return false;
+          }
+        }
 
-			if (splittedVariableName.size() > 0 && splittedVariableType.size() > 0) {
+        for (final String termInName : splittedVariableName) {
+          if (isAggregation(termInName)) {
+            return false;
+          }
+        }
 
-				for (final String termInType : splittedVariableType) {
-					if (containsCollectionKeyword(termInType, true)) {
-						return false;
-					}
-				}
+        if (!CustomParser.hasPOS("NNS", splittedVariableType)
+            && CustomParser.hasPOS("NNS", splittedVariableName)
+            && splittedVariableName.lastElement().endsWith("s")
+            && !CustomParser.getPOS(splittedVariableName.firstElement(), splittedVariableName)
+                .startsWith("VB")) {
 
-				for (final String termInName : splittedVariableName) {
-					if (isAggregation(termInName)) {
-						return false;
-					}
-				}
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
 
-				if (!CustomParser.hasPOS("NNS", splittedVariableType)
-						&& CustomParser.hasPOS("NNS", splittedVariableName)
-						&& splittedVariableName.lastElement().endsWith("s")
-						&& !CustomParser.getPOS(splittedVariableName.firstElement(), splittedVariableName)
-								.startsWith("VB")) {
+  // F1
+  private List<String> detectOppositeAttributeNameAndAttributeType(final String variableName,
+      final String variableType) throws JWNLException {
 
-					return true;
-				}
-			}
-			return false;
-		}
-		return false;
-	}
+    List<String> result = new ArrayList<String>();
 
-	// F1
-	private List<String> detectOppositeAttributeNameAndAttributeType(final String variableName,
-			final String variableType) throws JWNLException {
+    final Vector<String> splittedVariableType = Splitter.variableSplitter(variableType);
+    final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
 
-		List<String> result = new ArrayList<String>();
+    for (final String termInName : splittedVariableName) {
 
-		final Vector<String> splittedVariableType = Splitter.variableSplitter(variableType);
-		final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
+      if (!shouldBeIgnoredFromAntonyms(termInName)) {
 
-		for (final String termInName : splittedVariableName) {
+        for (final String termInType : splittedVariableType) {
 
-			if (!shouldBeIgnoredFromAntonyms(termInName)) {
+          if (!shouldBeIgnoredFromAntonyms(termInType)
+              && CustomDictionary.haveAntonyms(CustomDictionary.stringToIndexWordSet(termInName),
+                  CustomDictionary.stringToIndexWordSet(termInType))) {
 
-				for (final String termInType : splittedVariableType) {
+            result.add(termInName);
+            result.add(termInType);
 
-					if (!shouldBeIgnoredFromAntonyms(termInType)
-							&& CustomDictionary.haveAntonyms(CustomDictionary.stringToIndexWordSet(termInName),
-									CustomDictionary.stringToIndexWordSet(termInType))) {
+            return result;
+          }
 
-						result.add(termInName);
-						result.add(termInType);
+        }
+      }
+    }
+    return null;
+  }
 
-						return result;
-					}
+  // F2
+  private List<String> detectOppositeCommentAndAttributeSignature(
+      final ASTVariableDeclarator variable, final String variableName, final String variableType,
+      List<Comment> comments) throws JWNLException {
 
-				}
-			}
-		}
-		return null;
-	}
+    final List<String> result = new ArrayList<String>();
+    final String variableComments = toString(getVariableComments(variable, comments));
+    final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
+    final Vector<String> splittedVariableType = Splitter.variableSplitter(variableType);
+    final Set<String> splittedVariableSignature = new HashSet<String>();
 
-	// F2
-	private List<String> detectOppositeCommentAndAttributeSignature(
-			final ASTVariableDeclarator variable, final String variableName, final String variableType,
-			List<Comment> comments) throws JWNLException {
+    splittedVariableSignature.addAll(splittedVariableType);
+    splittedVariableSignature.addAll(splittedVariableName);
 
-		final List<String> result = new ArrayList<String>();
-		final String variableComments = toString(getVariableComments(variable, comments));
-		final Vector<String> splittedVariableName = Splitter.variableSplitter(variableName);
-		final Vector<String> splittedVariableType = Splitter.variableSplitter(variableType);
-		final Set<String> splittedVariableSignature = new HashSet<String>();
+    if (!variableComments.equals("") && variableComments != null) {
 
-		splittedVariableSignature.addAll(splittedVariableType);
-		splittedVariableSignature.addAll(splittedVariableName);
+      final Vector<String> splittedVariableComments = Splitter.commentSplitter(variableComments);
 
-		if (!variableComments.equals("") && variableComments != null) {
+      for (final String commentWord : splittedVariableComments) {
 
-			final Vector<String> splittedVariableComments = Splitter.commentSplitter(variableComments);
+        if (!shouldBeIgnoredFromAntonyms(commentWord)) {
 
-			for (final String commentWord : splittedVariableComments) {
+          for (final String signatureWord : splittedVariableSignature) {
 
-				if (!shouldBeIgnoredFromAntonyms(commentWord)) {
+            if (CustomDictionary.haveAntonyms(CustomDictionary.stringToIndexWordSet(commentWord),
+                CustomDictionary.stringToIndexWordSet(signatureWord))
+                && !commentWord.equalsIgnoreCase(signatureWord)
+                && !shouldBeIgnoredFromAntonyms(signatureWord)) {
 
-					for (final String signatureWord : splittedVariableSignature) {
+              result.add(commentWord);
+              result.add(signatureWord);
+              return result;
 
-						if (CustomDictionary.haveAntonyms(CustomDictionary.stringToIndexWordSet(commentWord),
-								CustomDictionary.stringToIndexWordSet(signatureWord))
-								&& !commentWord.equalsIgnoreCase(signatureWord)
-								&& !shouldBeIgnoredFromAntonyms(signatureWord)) {
-
-							result.add(commentWord);
-							result.add(signatureWord);
-							return result;
-
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
+            }
+          }
+        }
+      }
+    }
+    return null;
+  }
 
 }

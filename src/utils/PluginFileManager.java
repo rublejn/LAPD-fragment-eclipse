@@ -29,63 +29,64 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Map;
 
+import org.eclipse.core.runtime.FileLocator;
+
 import net.didion.jwnl.JWNLException;
 import net.didion.jwnl.JWNLRuntimeException;
 import net.didion.jwnl.dictionary.file.DictionaryFile;
 import net.didion.jwnl.dictionary.file_manager.FileManagerImpl;
 import net.didion.jwnl.util.factory.Param;
 
-import org.eclipse.core.runtime.FileLocator;
-
 public class PluginFileManager extends FileManagerImpl {
 
-	public PluginFileManager() {
-	}
+  public PluginFileManager() {
+  }
 
-	public PluginFileManager(final String searchDir, final Class dictionaryFileType)
-			throws IOException {
+  public PluginFileManager(final String searchDir, final Class dictionaryFileType)
+      throws IOException {
 
-		// URL url = new URL(searchDir);
+    // URL url = new URL(searchDir);
 
-		// url.openConnection().getInputStream();
-		super(searchDir, dictionaryFileType);
-	}
+    // url.openConnection().getInputStream();
+    super(searchDir, dictionaryFileType);
+  }
 
-	public Object create(final Map params) throws JWNLException {
-		Class fileClass = null;
-		try {
-			fileClass = Class.forName(((Param) params.get(FileManagerImpl.FILE_TYPE)).getValue());
-		} catch (final ClassNotFoundException ex) {
-			throw new JWNLRuntimeException("DICTIONARY_EXCEPTION_002", ex);
-		}
-		this.checkFileType(fileClass);
+  @Override
+  public Object create(final Map params) throws JWNLException {
+    Class fileClass = null;
+    try {
+      fileClass = Class.forName(((Param) params.get(FileManagerImpl.FILE_TYPE)).getValue());
+    } catch (final ClassNotFoundException ex) {
+      throw new JWNLRuntimeException("DICTIONARY_EXCEPTION_002", ex);
+    }
+    this.checkFileType(fileClass);
 
-		final String path = ((Param) params.get(FileManagerImpl.PATH)).getValue();
+    final String path = ((Param) params.get(FileManagerImpl.PATH)).getValue();
 
-		try {
-			final URL url = FileLocator.toFileURL(new URL(path));
-			final String dir = new File(new URI(url.getProtocol(), url.getAuthority(), null,
-					url.getPort(), url.getPath(), url.getQuery(), url.getRef())).getPath() + File.separator;
-			// System.out.println("PATH:" + dir);
-			return new PluginFileManager(dir, fileClass);
+    try {
+      final URL url = FileLocator.toFileURL(new URL(path));
+      final String dir = new File(new URI(url.getProtocol(), url.getAuthority(), null,
+          url.getPort(), url.getPath(), url.getQuery(), url.getRef())).getPath() + File.separator;
+      // System.out.println("PATH:" + dir);
+      return new PluginFileManager(dir, fileClass);
 
-		} catch (final IOException ex) {
-			throw new JWNLException("DICTIONARY_EXCEPTION_016", fileClass, ex);
-		} catch (final URISyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
-	}
+    } catch (final IOException ex) {
+      throw new JWNLException("DICTIONARY_EXCEPTION_016", fileClass, ex);
+    } catch (final URISyntaxException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+    return null;
+  }
 
-	/**
-	 * Checks the type to ensure it's valid.
-	 * 
-	 * @param c
-	 */
-	private void checkFileType(final Class c) {
-		if (!DictionaryFile.class.isAssignableFrom(c)) {
-			throw new JWNLRuntimeException("DICTIONARY_EXCEPTION_003", c);
-		}
-	}
+  /**
+   * Checks the type to ensure it's valid.
+   * 
+   * @param c
+   */
+  private void checkFileType(final Class c) {
+    if (!DictionaryFile.class.isAssignableFrom(c)) {
+      throw new JWNLRuntimeException("DICTIONARY_EXCEPTION_003", c);
+    }
+  }
 }

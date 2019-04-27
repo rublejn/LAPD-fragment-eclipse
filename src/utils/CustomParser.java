@@ -23,159 +23,162 @@ import edu.stanford.nlp.trees.Tree;
  */
 public final class CustomParser {
 
-    private static CustomParser cp = null;
-    private static LexicalizedParser lp = null;
-    private static TokenizerFactory<CoreLabel> tokenizerFactory;
-    private static Properties props;
-    private static StanfordCoreNLP pipeline;
+  private static CustomParser cp = null;
+  private static LexicalizedParser lp = null;
+  private static TokenizerFactory<CoreLabel> tokenizerFactory;
+  private static Properties props;
+  private static StanfordCoreNLP pipeline;
 
-    public static CustomParser getInstance() {
-        if (CustomParser.cp == null) {
-            CustomParser.cp = new CustomParser();
-        }
-        return CustomParser.cp;
+  public static CustomParser getInstance() {
+    if (CustomParser.cp == null) {
+      CustomParser.cp = new CustomParser();
     }
+    return CustomParser.cp;
+  }
 
-    private CustomParser() {
+  private CustomParser() {
 
-        CustomParser.lp = LexicalizedParser.loadModel("edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz");
-        CustomParser.tokenizerFactory = PTBTokenizer.factory(new CoreLabelTokenFactory(), "");
-        CustomParser.props = new Properties();
-        CustomParser.props.put("annotators", "tokenize, ssplit, pos, lemma");
-        CustomParser.pipeline = new StanfordCoreNLP(CustomParser.props);
+    CustomParser.lp = LexicalizedParser
+        .loadModel("edu/stanford/nlp/models/lexparser/englishPCFG.ser.gz");
+    CustomParser.tokenizerFactory = PTBTokenizer.factory(new CoreLabelTokenFactory(), "");
+    CustomParser.props = new Properties();
+    CustomParser.props.put("annotators", "tokenize, ssplit, pos, lemma");
+    CustomParser.pipeline = new StanfordCoreNLP(CustomParser.props);
 
+  }
+
+  public static Tree getTree(final String sentence) {
+
+    final List<CoreLabel> tokens = CustomParser.tokenizerFactory
+        .getTokenizer(new StringReader(sentence)).tokenize();
+
+    return CustomParser.lp.apply(tokens);
+  }
+
+  public static Tree getTree(final Vector<String> sentence) {
+
+    final String[] sentenceArray = sentence.toArray(new String[sentence.size()]);
+
+    final List<CoreLabel> tokens = SentenceUtils.toCoreLabelList(sentenceArray);
+    return CustomParser.lp.apply(tokens);
+  }
+
+  public static boolean hasPOS(final String pos, final String sentence) {
+
+    final Tree tree = CustomParser.getTree(sentence);
+    final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
+    final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
+    CoreLabel next = null;
+
+    while (taggedWord.hasNext()) {
+      next = taggedWord.next();
+      final String taggedPOS = next.get(PartOfSpeechAnnotation.class).toString();
+
+      if (taggedPOS.equalsIgnoreCase(pos)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    public static Tree getTree(final String sentence) {
+  public static boolean hasPOS(final String pos, final Vector<String> sentence) {
 
-        final List<CoreLabel> tokens = CustomParser.tokenizerFactory.getTokenizer(new StringReader(sentence))
-                .tokenize();
+    final Tree tree = CustomParser.getTree(sentence);
+    final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
+    final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
+    CoreLabel next = null;
 
-        return CustomParser.lp.apply(tokens);
+    while (taggedWord.hasNext()) {
+      next = taggedWord.next();
+      final String taggedPOS = next.get(PartOfSpeechAnnotation.class).toString();
+
+      if (taggedPOS.equalsIgnoreCase(pos)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    public static Tree getTree(final Vector<String> sentence) {
+  public static boolean hasPOSInAnyForm(final String pos, final String sentence) {
 
-        final String[] sentenceArray = sentence.toArray(new String[sentence.size()]);
+    final Iterator<CoreLabel> taggedWord = CustomParser.getTree(sentence).taggedLabeledYield()
+        .iterator();
+    CoreLabel next = null;
 
-        final List<CoreLabel> tokens = SentenceUtils.toCoreLabelList(sentenceArray);
-        return CustomParser.lp.apply(tokens);
+    while (taggedWord.hasNext()) {
+      next = taggedWord.next();
+
+      if (next.get(PartOfSpeechAnnotation.class).startsWith(pos)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    public static boolean hasPOS(final String pos, final String sentence) {
+  public static boolean hasPOSInAnyForm(final String pos, final Vector<String> sentence) {
 
-        final Tree tree = CustomParser.getTree(sentence);
-        final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
-        final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
-        CoreLabel next = null;
+    final Iterator<CoreLabel> taggedWord = CustomParser.getTree(sentence).taggedLabeledYield()
+        .iterator();
+    CoreLabel next = null;
 
-        while (taggedWord.hasNext()) {
-            next = taggedWord.next();
-            final String taggedPOS = next.get(PartOfSpeechAnnotation.class).toString();
+    while (taggedWord.hasNext()) {
+      next = taggedWord.next();
 
-            if (taggedPOS.equalsIgnoreCase(pos)) {
-                return true;
-            }
-        }
-        return false;
+      if (next.get(PartOfSpeechAnnotation.class).startsWith(pos)) {
+        return true;
+      }
     }
+    return false;
+  }
 
-    public static boolean hasPOS(final String pos, final Vector<String> sentence) {
+  public static String getAllPOS(final String sentence) {
 
-        final Tree tree = CustomParser.getTree(sentence);
-        final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
-        final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
-        CoreLabel next = null;
+    final Tree tree = CustomParser.getTree(sentence);
+    List<CoreLabel> taggedWords = tree.taggedLabeledYield();
 
-        while (taggedWord.hasNext()) {
-            next = taggedWord.next();
-            final String taggedPOS = next.get(PartOfSpeechAnnotation.class).toString();
-
-            if (taggedPOS.equalsIgnoreCase(pos)) {
-                return true;
-            }
-        }
-        return false;
+    String result = "";
+    for (final CoreLabel taggedWord : taggedWords) {
+      result = result + taggedWord.toString() + " ";
     }
+    result = result.substring(0, result.length() - 1);
+    return result;
 
-    public static boolean hasPOSInAnyForm(final String pos, final String sentence) {
+  }
 
-        final Iterator<CoreLabel> taggedWord = CustomParser.getTree(sentence).taggedLabeledYield().iterator();
-        CoreLabel next = null;
+  public static String getPOS(final String term, final String sentence) {
 
-        while (taggedWord.hasNext()) {
-            next = taggedWord.next();
+    final Tree tree = CustomParser.getTree(sentence);
+    final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
+    final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
+    CoreLabel next = null;
 
-            if (next.get(PartOfSpeechAnnotation.class).startsWith(pos)) {
-                return true;
-            }
-        }
-        return false;
+    while (taggedWord.hasNext()) {
+      next = taggedWord.next();
+      final String word = next.get(TextAnnotation.class);
+
+      if (word.compareTo(term) == 0) {
+        return next.get(PartOfSpeechAnnotation.class);
+      }
     }
+    return null;
+  }
 
-    public static boolean hasPOSInAnyForm(final String pos, final Vector<String> sentence) {
+  public static String getPOS(final String term, final Vector<String> sentence) {
 
-        final Iterator<CoreLabel> taggedWord = CustomParser.getTree(sentence).taggedLabeledYield().iterator();
-        CoreLabel next = null;
+    final Tree tree = CustomParser.getTree(sentence);
+    final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
+    final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
+    CoreLabel next = null;
 
-        while (taggedWord.hasNext()) {
-            next = taggedWord.next();
+    while (taggedWord.hasNext()) {
+      next = taggedWord.next();
+      final String word = next.get(TextAnnotation.class);
 
-            if (next.get(PartOfSpeechAnnotation.class).startsWith(pos)) {
-                return true;
-            }
-        }
-        return false;
+      if (word.compareTo(term) == 0) {
+        return next.get(PartOfSpeechAnnotation.class);
+      }
     }
-
-    public static String getAllPOS(final String sentence) {
-
-        final Tree tree = CustomParser.getTree(sentence);
-        List<CoreLabel> taggedWords = tree.taggedLabeledYield();
-
-        String result = "";
-        for (final CoreLabel taggedWord : taggedWords) {
-            result = result + taggedWord.toString() + " ";
-        }
-        result = result.substring(0, result.length() - 1);
-        return result;
-
-    }
-
-    public static String getPOS(final String term, final String sentence) {
-
-        final Tree tree = CustomParser.getTree(sentence);
-        final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
-        final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
-        CoreLabel next = null;
-
-        while (taggedWord.hasNext()) {
-            next = taggedWord.next();
-            final String word = next.get(TextAnnotation.class);
-
-            if (word.compareTo(term) == 0) {
-                return next.get(PartOfSpeechAnnotation.class);
-            }
-        }
-        return null;
-    }
-
-    public static String getPOS(final String term, final Vector<String> sentence) {
-
-        final Tree tree = CustomParser.getTree(sentence);
-        final List<CoreLabel> taggedWords = tree.taggedLabeledYield();
-        final Iterator<CoreLabel> taggedWord = taggedWords.iterator();
-        CoreLabel next = null;
-
-        while (taggedWord.hasNext()) {
-            next = taggedWord.next();
-            final String word = next.get(TextAnnotation.class);
-
-            if (word.compareTo(term) == 0) {
-                return next.get(PartOfSpeechAnnotation.class);
-            }
-        }
-        return null;
-    }
+    return null;
+  }
 
 }
